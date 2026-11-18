@@ -7,7 +7,7 @@ pip install -r requirements.txt pyinstaller || goto :err
 pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController ^
   --paths . ^
   --add-data "web;web" ^
-  --collect-all qrcode ^
+  --collect-all qrcode --collect-all vgamepad ^
   --hidden-import PIL.ImageTk ^
   app\main.py || goto :err
 echo.

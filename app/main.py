@@ -22,6 +22,8 @@ class App:
         f.grid()
         self.status = ttk.Label(f, font=("Segoe UI", 12, "bold"))
         self.status.grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Label(f, text="Mode: " + getattr(server.pad, "name", "Keyboard keys"),
+                  foreground="#666").grid(row=7, column=0, columnspan=2, sticky="w")
         ttk.Label(f, text="Network").grid(row=1, column=0, sticky="w", pady=(10, 0))
         self.combo = ttk.Combobox(f, state="readonly", width=34)
         self.combo.grid(row=2, column=0, sticky="we")
@@ -97,7 +99,12 @@ class App:
 
 def main() -> None:
     settings = config.load_settings()
-    keys = Keyboard()
+    try:  # preferred: virtual Xbox controller (needs ViGEmBus driver); fallback: keyboard keys
+        from app.gamepad import Gamepad
+        keys = Gamepad()
+    except Exception:
+        keys = Keyboard()
+        keys.name = "Keyboard keys (install ViGEmBus for controller mode)"
     atexit.register(keys.reset)
     server = Server(settings["pin"], settings["port"], keys, tls.context(config.local_ips()))
     server.start()

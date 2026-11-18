@@ -54,3 +54,10 @@ python -m app.main        # or: build.bat  ->  dist\ForzaController.exe
 
 ## Security
 Traffic is encrypted but the certificate is self-signed; use your own router or the PC hotspot, not public Wi-Fi.
+
+## Controller mode (recommended for Forza)
+If the game ignores keyboard keys, install the free **ViGEmBus** driver once
+(https://github.com/nefarius/ViGEmBus/releases, run the installer, reboot). On start, the app then shows
+"Mode: Virtual Xbox controller" and appears to Forza as a real Xbox 360 pad: analog tilt steering,
+ACCELERATE = RT, BRAKE = LT, HANDBRAKE = A, REWIND = Y. Without the driver it falls back to keyboard keys.
+In Forza, set the controller input to the gamepad (unplug/disable other pads if it picks the wrong one).
