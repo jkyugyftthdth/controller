@@ -4,7 +4,7 @@ python -m venv .venv || goto :err
 call .venv\Scripts\activate || goto :err
 python -m pip install --upgrade pip
 pip install -r requirements.txt pyinstaller || goto :err
-pyinstaller --noconfirm --clean --onefile --noconsole --name ForzaController ^
+pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController ^
   --paths . ^
   --add-data "web;web" ^
   --collect-all qrcode ^
