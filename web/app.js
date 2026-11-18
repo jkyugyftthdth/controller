@@ -103,7 +103,7 @@ $("#go").onclick = () => {
 $("#disc").onclick = () => { bad = true; if (ws) ws.close(); $("#cfg").classList.add("hide"); $("#start").classList.remove("hide"); };
 
 // ---- settings UI ------------------------------------------------------------------------------------------------
-$("#gear").onclick = () => $("#cfg").classList.remove("hide"); $("#cfgx").onclick = () => $("#cfg").classList.add("hide");
+$("#info").onclick = () => alert("Phone controller\nBRAKE=LT  ACCELERATE=RT  HAND BRAKE=A  NITROS=X  REWIND=Y\nTilt to steer (left stick)."); $("#gear").onclick = () => $("#cfg").classList.remove("hide"); $("#cfgx").onclick = () => $("#cfg").classList.add("hide");
 $("#fs").onclick = fullscreen;
 [["range", "#c-range"], ["steer", "#c-steer"], ["dz", "#c-dz"]].forEach(([k, s]) => {
   const el = $(s), o = $(s + "v"); el.value = cfg[k]; o.textContent = cfg[k];

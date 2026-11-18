@@ -5,7 +5,7 @@ import vgamepad as vg
 
 B = vg.XUSB_BUTTON
 # Forza default gamepad layout: RT accelerate, LT brake/reverse, A handbrake, Y rewind, left stick steer
-BUTTONS = {"hb": B.XUSB_GAMEPAD_A, "rw": B.XUSB_GAMEPAD_Y}
+BUTTONS = {"hb": B.XUSB_GAMEPAD_A, "rw": B.XUSB_GAMEPAD_Y, "nt": B.XUSB_GAMEPAD_X}
 
 
 class Gamepad:

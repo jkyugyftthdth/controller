@@ -5,17 +5,21 @@
 <link rel="stylesheet" href="/static/style.css"></head>
 <body>
 <header id="bar"><span id="dot"></span><span><b id="ms">--</b> ms</span><span class="sp"></span>
-<button id="cal">Calibrate</button><button id="gear">Settings</button></header>
+<button id="cal">Calibrate</button><button id="info" aria-label="Info">&#9432;</button><button id="gear" aria-label="Settings">&#9881;</button></header>
 <main>
+ <section id="left" class="pad">
+  <button class="hold brk" data-k="brk">BRAKE<small>LT</small></button>
+  <button class="hold hb" data-k="hb">HAND BRAKE<small>A</small></button>
+ </section>
  <section id="zone">
   <div id="wheel"><svg viewBox="0 0 100 100" fill="none" stroke-linecap="round"><circle cx="50" cy="50" r="42" stroke-width="10"/><path d="M10 50h80M50 50v40" stroke-width="8"/><rect x="45" y="3" width="10" height="13" class="mark" rx="2"/></svg></div>
   <div id="sbar"><i id="sbi"></i></div>
   <p id="hint">Tilt the phone like a steering wheel</p>
+  <button class="hold rw" data-k="rw">REWIND<small>Y</small></button>
  </section>
- <section id="ctl">
-  <button class="hold brk" data-k="brk">BRAKE</button>
-  <button class="hold acc" data-k="acc">ACCELERATE</button>
-  <div class="side"><button class="hold" data-k="hb">HAND<br>BRAKE</button><button class="hold" data-k="rw">REWIND</button></div>
+ <section id="right" class="pad">
+  <button class="hold acc" data-k="acc">ACCELERATE<small>RT</small></button>
+  <button class="hold nt" data-k="nt">NITROS<small>X</small></button>
  </section>
 </main>
 
