@@ -1,5 +1,6 @@
 "use strict";
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const cap = (el, id) => { try { el.setPointerCapture(id); } catch (e) {} };
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const load = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const store = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -10,31 +11,63 @@ try { Object.assign(cfg, JSON.parse(load("fc2.cfg"))); } catch (e) {}
 const save = () => store("fc2.cfg", JSON.stringify(cfg));
 
 // ---- state -----------------------------------------------------------------------------
-const S = { st: 0, k: new Set() };
+const S = { st: 0, k: new Set(), ls: [0, 0], rs: [0, 0] };
+const held = {};   // key -> number of fingers holding a button that sends it
 let ws = null, ok = false, bad = false, pend = false, rtt = null, pin = "", timer = null, retry = null, lastSent = "";
 const curve = (v, s) => Math.sign(v) * Math.pow(Math.abs(v), 1 / s);
+const eff = () => Math.abs(S.ls[0]) > 0.02 ? S.ls[0] : S.st;   // left on-screen stick overrides tilt
 const steer = v => { const d = cfg.dz / 100, a = Math.abs(v); return a < d ? 0 : curve(clamp((a - d) / (1 - d), 0, 1) * Math.sign(v), cfg.steer); };
 const buzz = n => { if (cfg.haptics && navigator.vibrate) navigator.vibrate(n); };
 
 function ui() {
-  $("#sbi").style.left = 50 + S.st * 50 + "%";
-  $("#wheel svg").style.transform = `rotate(${S.st * 90}deg)`;
+  const v = eff();
+  $("#sbi").style.left = 50 + v * 50 + "%";
+  $("#wheel svg").style.transform = `rotate(${v * 90}deg)`;
 }
 function mark() { if (!pend) { pend = true; requestAnimationFrame(flush); } }
 function flush() {   // send only when something changed (battery friendly)
   pend = false;
   if (!ok || !ws || ws.readyState !== 1) return;
-  const m = JSON.stringify({ t: "s", st: Math.round(S.st * 100) / 100, k: [...S.k] });
+  const r2 = v => Math.round(v * 100) / 100;
+  const m = JSON.stringify({ t: "s", st: r2(S.st), k: [...S.k], ls: S.ls.map(r2), rs: S.rs.map(r2) });
   if (m !== lastSent) { lastSent = m; ws.send(m); }
 }
 
 // ---- hold buttons: hold on phone = key held on PC ------------------------------------
 $$(".hold").forEach(el => {
-  const k = el.dataset.k;
-  el.addEventListener("pointerdown", e => { e.preventDefault(); el.setPointerCapture(e.pointerId); S.k.add(k); el.classList.add("on"); buzz(12); mark(); });
-  const up = () => { S.k.delete(k); el.classList.remove("on"); mark(); };
-  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up);
+  const k = el.dataset.k; let on = false;
+  const set = v => {
+    if (v === on) return; on = v;
+    held[k] = (held[k] || 0) + (v ? 1 : -1);
+    held[k] > 0 ? S.k.add(k) : S.k.delete(k);
+    el.classList.toggle("on", v); mark();
+  };
+  el._release = () => set(false);
+  el.addEventListener("pointerdown", e => { e.preventDefault(); cap(el, e.pointerId); set(true); buzz(12); });
+  el.addEventListener("pointerup", () => set(false)); el.addEventListener("pointercancel", () => set(false));
+  el.addEventListener("lostpointercapture", () => set(false));
 });
+
+// ---- on-screen thumb sticks (left = steer + Y axis, right = camera) ------------------
+function stick(el, key) {
+  const knob = el.querySelector("i"); let id = null;
+  const move = e => {
+    const r = el.getBoundingClientRect(), R = r.width / 2;
+    let dx = (e.clientX - r.left - R) / R, dy = (e.clientY - r.top - R) / R;
+    const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
+    S[key] = [dx, -dy];   // screen-down is negative on an Xbox stick
+    knob.style.transform = `translate(${dx * R * 0.5}px,${dy * R * 0.5}px)`; ui(); mark();
+  };
+  const end = e => {
+    if (e && e.pointerId !== id) return;
+    id = null; S[key] = [0, 0]; knob.style.transform = ""; el.classList.remove("on"); ui(); mark();
+  };
+  el._release = () => end();
+  el.addEventListener("pointerdown", e => { if (id !== null) return; e.preventDefault(); id = e.pointerId; cap(el, id); el.classList.add("on"); buzz(8); move(e); });
+  el.addEventListener("pointermove", e => { if (e.pointerId === id) move(e); });
+  el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+}
+stick($("#ls"), "ls"); stick($("#rs"), "rs");
 
 // ---- gyro steering ----------------------------------------------------------------------------
 let ang = 0, off = 0, lastMotion = 0;
@@ -54,7 +87,7 @@ $("#cal").onclick = calibrate;
 // ---- touch-strip steering (fallback if gyro unavailable) ---------------------------------
 const Z = $("#zone"); let zid = null;
 const zset = e => { const r = Z.getBoundingClientRect(); S.st = steer(clamp(((e.clientX - r.left) / r.width - .5) * 2, -1, 1)); ui(); mark(); };
-Z.onpointerdown = e => { if (cfg.mode !== "touch") return; zid = e.pointerId; Z.setPointerCapture(zid); zset(e); };
+Z.onpointerdown = e => { if (cfg.mode !== "touch" || e.target.closest("button")) return; zid = e.pointerId; cap(Z, zid); zset(e); };
 Z.onpointermove = e => { if (e.pointerId === zid) zset(e); };
 Z.onpointerup = Z.onpointercancel = e => { if (e.pointerId === zid) { zid = null; S.st = 0; ui(); mark(); } };
 
@@ -64,7 +97,12 @@ function hint() {
 }
 
 // ---- safety: release everything ------------------------------------------------------------------
-function releaseAll() { S.st = 0; S.k.clear(); $$(".hold").forEach(b => b.classList.remove("on")); ui(); mark(); }
+function releaseAll() {
+  S.st = 0; S.k.clear(); S.ls = [0, 0]; S.rs = [0, 0];
+  $$(".hold").forEach(b => { b.classList.remove("on"); if (b._release) b._release(); });
+  $$(".stick").forEach(b => { b.classList.remove("on"); b.querySelector("i").style.transform = ""; });
+  ui(); mark();
+}
 document.addEventListener("visibilitychange", () => { if (document.hidden) releaseAll(); });
 addEventListener("pagehide", releaseAll); addEventListener("blur", releaseAll);
 addEventListener("contextmenu", e => e.preventDefault());
@@ -103,7 +141,7 @@ $("#go").onclick = () => {
 $("#disc").onclick = () => { bad = true; if (ws) ws.close(); $("#cfg").classList.add("hide"); $("#start").classList.remove("hide"); };
 
 // ---- settings UI ------------------------------------------------------------------------------------------------
-$("#info").onclick = () => alert("Phone controller\nBRAKE=LT  ACCELERATE=RT  HAND BRAKE=A  NITROS=X  REWIND=Y\nTilt to steer (left stick)."); $("#gear").onclick = () => $("#cfg").classList.remove("hide"); $("#cfgx").onclick = () => $("#cfg").classList.add("hide");
+$("#info").onclick = () => alert("On-screen Xbox controller\nBRAKE=LT  ACCELERATE=RT  LB/RB  D-pad  BACK/START\nA=HAND BRAKE  B  X=NITROS  Y=REWIND\nTilt (or the left stick) steers. Right stick = camera."); $("#gear").onclick = () => $("#cfg").classList.remove("hide"); $("#cfgx").onclick = () => $("#cfg").classList.add("hide");
 $("#fs").onclick = fullscreen;
 [["range", "#c-range"], ["steer", "#c-steer"], ["dz", "#c-dz"]].forEach(([k, s]) => {
   const el = $(s), o = $(s + "v"); el.value = cfg[k]; o.textContent = cfg[k];
