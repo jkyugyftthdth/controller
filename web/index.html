@@ -7,19 +7,47 @@
 <header id="bar"><span id="dot"></span><span><b id="ms">--</b> ms</span><span class="sp"></span>
 <button id="cal">Calibrate</button><button id="info" aria-label="Info">&#9432;</button><button id="gear" aria-label="Settings">&#9881;</button></header>
 <main>
- <section id="left" class="pad">
-  <button class="hold brk" data-k="brk">BRAKE<small>LT</small></button>
-  <button class="hold hb" data-k="hb">HAND BRAKE<small>A</small></button>
+ <!-- LEFT: brake / LB / left stick / D-pad -->
+ <section id="left" class="side">
+  <div class="r1">
+   <button class="hold trg brk" data-k="brk">BRAKE<small>LT</small></button>
+   <button class="hold bmp" data-k="lb">LB</button>
+  </div>
+  <div class="r2">
+   <div class="stick" id="ls"><i></i><small>L</small></div>
+   <div class="dpad">
+    <button class="hold d up" data-k="up">&#9650;</button>
+    <button class="hold d lf" data-k="left">&#9664;</button>
+    <button class="hold d rt" data-k="right">&#9654;</button>
+    <button class="hold d dn" data-k="down">&#9660;</button>
+   </div>
+  </div>
  </section>
+
+ <!-- CENTRE: wheel / tilt bar / rewind / back+start -->
  <section id="zone">
   <div id="wheel"><svg viewBox="0 0 100 100" fill="none" stroke-linecap="round"><circle cx="50" cy="50" r="42" stroke-width="10"/><path d="M10 50h80M50 50v40" stroke-width="8"/><rect x="45" y="3" width="10" height="13" class="mark" rx="2"/></svg></div>
   <div id="sbar"><i id="sbi"></i></div>
   <p id="hint">Tilt the phone like a steering wheel</p>
-  <button class="hold rw" data-k="rw">REWIND<small>Y</small></button>
+  <button class="hold rw" data-k="y">REWIND<small>Y</small></button>
+  <div class="mid"><button class="hold sm" data-k="back">BACK</button><button class="hold sm" data-k="start">START</button></div>
  </section>
- <section id="right" class="pad">
-  <button class="hold acc" data-k="acc">ACCELERATE<small>RT</small></button>
-  <button class="hold nt" data-k="nt">NITROS<small>X</small></button>
+
+ <!-- RIGHT: accelerate / RB / ABXY / right stick -->
+ <section id="right" class="side">
+  <div class="r1">
+   <button class="hold bmp" data-k="rb">RB</button>
+   <button class="hold trg acc" data-k="acc">ACCELERATE<small>RT</small></button>
+  </div>
+  <div class="r2">
+   <div class="abxy">
+    <button class="hold f fy" data-k="y">Y<small>REWIND</small></button>
+    <button class="hold f fx" data-k="x">X<small>NITROS</small></button>
+    <button class="hold f fb" data-k="b">B</button>
+    <button class="hold f fa" data-k="a">A<small>HAND BRAKE</small></button>
+   </div>
+   <div class="stick" id="rs"><i></i><small>R</small></div>
+  </div>
  </section>
 </main>
 
