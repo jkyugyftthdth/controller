@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12"><title>Forza Controller</title>
+<link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header id="bar"><span id="dot"></span><span><b id="ms">--</b> ms</span><span class="sp"></span>
+<button id="cal">Calibrate</button><button id="gear">Settings</button></header>
+<main>
+ <section id="zone">
+  <div id="wheel"><svg viewBox="0 0 100 100" fill="none" stroke-linecap="round"><circle cx="50" cy="50" r="42" stroke-width="10"/><path d="M10 50h80M50 50v40" stroke-width="8"/><rect x="45" y="3" width="10" height="13" class="mark" rx="2"/></svg></div>
+  <div id="sbar"><i id="sbi"></i></div>
+  <p id="hint">Tilt the phone like a steering wheel</p>
+ </section>
+ <section id="ctl">
+  <button class="hold brk" data-k="brk">BRAKE</button>
+  <button class="hold acc" data-k="acc">ACCELERATE</button>
+  <div class="side"><button class="hold" data-k="hb">HAND<br>BRAKE</button><button class="hold" data-k="rw">REWIND</button></div>
+ </section>
+</main>
+
+<div id="cfg" class="ov hide"><div class="card"><h1>SETTINGS</h1>
+ <label>Steering <select id="c-mode"><option value="gyro">Gyro (tilt)</option><option value="touch">Touch strip</option></select></label>
+ <label>Full lock at (deg) <span id="c-rangev"></span><input id="c-range" type="range" min="15" max="90" step="5"></label>
+ <label>Sensitivity <span id="c-steerv"></span><input id="c-steer" type="range" min="0.5" max="2" step="0.1"></label>
+ <label>Deadzone % <span id="c-dzv"></span><input id="c-dz" type="range" min="0" max="20" step="1"></label>
+ <label>Invert steering <input id="c-inv" type="checkbox"></label>
+ <label>Vibration <input id="c-hap" type="checkbox"></label>
+ <div class="row"><button id="fs">Fullscreen</button><button id="disc">Disconnect</button></div>
+ <button id="cfgx">Close</button></div></div>
+
+<div id="start" class="ov"><div class="card"><h1>FORZA CONTROLLER</h1>
+ <input id="pin" inputmode="numeric" maxlength="6" placeholder="6-digit PIN" autocomplete="off">
+ <button id="go" class="big">CONNECT</button><p id="msg"></p></div></div>
+<div id="rot" class="ov">Rotate your phone to landscape</div>
+<script src="/static/app.js"></script></body></html>
