@@ -29,7 +29,9 @@ jobs:
           $pkg = Get-ChildItem dl\x -Recurse -Directory -Filter vgamepad | Where-Object { Test-Path "$($_.FullName)\__init__.py" } | Select-Object -First 1
           $sp = python -c "import site;print(site.getsitepackages()[0])"
           Copy-Item -Recurse -Force $pkg.FullName "$sp\vgamepad"
-          python -c "import vgamepad; print('vgamepad import ok')"
+          # importing vgamepad needs the driver (absent on CI), so only check the files are there
+          if (-not (Test-Path "$sp\\vgamepad\\__init__.py")) { throw 'vgamepad files missing' }
+          Get-ChildItem "$sp\\vgamepad" -Recurse -Filter *.dll | Select-Object -ExpandProperty FullName
       - run: >
           pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController
           --paths . --add-data "web;web" --collect-all qrcode --collect-all vgamepad --hidden-import PIL.ImageTk app/main.py
