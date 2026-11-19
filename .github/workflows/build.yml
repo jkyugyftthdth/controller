@@ -34,7 +34,7 @@ jobs:
           Get-ChildItem "$sp\\vgamepad" -Recurse -Filter *.dll | Select-Object -ExpandProperty FullName
       - run: >
           pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController
-          --paths . --add-data "web;web" --collect-all qrcode --collect-all vgamepad --hidden-import PIL.ImageTk app/main.py
+          --paths . --add-data "web;web" --collect-all qrcode --collect-all vgamepad --hidden-import vgamepad.win.virtual_gamepad --hidden-import vgamepad.win.vigem_client --hidden-import vgamepad.win.vigem_commons --hidden-import PIL.ImageTk app/main.py
       - uses: actions/upload-artifact@v4
         with:
           name: ForzaController-portable
