@@ -27,7 +27,7 @@ CloseApplications=yes
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Shortcuts:"
-Name: "firewall"; Description: "Allow phone connections through Windows Firewall (TCP port 8443)"; GroupDescription: "Connection:"
+Name: "firewall"; Description: "Allow phone connections through Windows Firewall (TCP ports 8443 and 8444)"; GroupDescription: "Connection:"
 #ifexist "ViGEmBus_Setup.exe"
 Name: "vigem"; Description: "Install the ViGEmBus gamepad driver (needed for Xbox controller mode)"; GroupDescription: "Controller:"; Check: not ViGEmInstalled
 #endif
@@ -45,7 +45,7 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\ForzaController.exe"; Tasks: 
 
 [Run]
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Forza Controller"""; Flags: runhidden; Tasks: firewall
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Forza Controller"" dir=in action=allow protocol=TCP localport=8443 profile=any"; Flags: runhidden; Tasks: firewall
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""Forza Controller"" dir=in action=allow protocol=TCP localport=8443,8444 profile=any"; Flags: runhidden; Tasks: firewall
 #ifexist "ViGEmBus_Setup.exe"
 Filename: "{tmp}\{#VigemFile}"; Parameters: "/passive /promptrestart"; StatusMsg: "Installing the ViGEmBus gamepad driver..."; Tasks: vigem
 #endif

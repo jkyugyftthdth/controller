@@ -10,6 +10,7 @@ from aiohttp import WSMsgType, web
 from app.config import resource_path
 
 MAX_FAILS, LOCK_SECONDS, STALE_SECONDS = 5, 60, 1.0
+APP_PORT = 8444   # plain (non-TLS) port for the Android app; still PIN-protected, use on your own network only
 
 
 class Server:
@@ -42,6 +43,10 @@ class Server:
         except OSError as e:
             self.error = f"Port {self.port} unavailable: {e}"
             return
+        try:
+            self._loop.run_until_complete(web.TCPSite(runner, "0.0.0.0", APP_PORT).start())
+        except OSError:
+            pass   # the browser page keeps working; only the Android app port is busy
         self._loop.create_task(self._watchdog())
         self._loop.run_forever()
 

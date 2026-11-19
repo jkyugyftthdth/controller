@@ -1,6 +1,8 @@
 "use strict";
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const cap = (el, id) => { try { el.setPointerCapture(id); } catch (e) {} };
+const NATIVE = !!window.Android;   // running inside the Android app (native sensors, vibration, plain ws:// to the PC)
+if (NATIVE) document.documentElement.classList.add("app");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const load = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const store = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -13,11 +15,15 @@ const save = () => store("fc2.cfg", JSON.stringify(cfg));
 // ---- state -----------------------------------------------------------------------------
 const S = { st: 0, k: new Set(), ls: [0, 0], rs: [0, 0] };
 const held = {};   // key -> number of fingers holding a button that sends it
-let ws = null, ok = false, bad = false, pend = false, rtt = null, pin = "", timer = null, retry = null, lastSent = "";
+let host = "", ws = null, ok = false, bad = false, pend = false, rtt = null, pin = "", timer = null, retry = null, lastSent = "";
 const curve = (v, s) => Math.sign(v) * Math.pow(Math.abs(v), 1 / s);
 const eff = () => Math.abs(S.ls[0]) > 0.02 ? S.ls[0] : S.st;   // left on-screen stick overrides tilt
 const steer = v => { const d = cfg.dz / 100, a = Math.abs(v); return a < d ? 0 : curve(clamp((a - d) / (1 - d), 0, 1) * Math.sign(v), cfg.steer); };
-const buzz = n => { if (cfg.haptics && navigator.vibrate) navigator.vibrate(n); };
+const buzz = n => {
+  if (!cfg.haptics) return;
+  if (NATIVE && window.Android.vibrate) window.Android.vibrate([].concat(n).reduce((a, b) => a + b, 0));
+  else if (navigator.vibrate) navigator.vibrate(n);
+};
 
 function ui() {
   const v = eff();
@@ -71,16 +77,19 @@ stick($("#ls"), "ls"); stick($("#rs"), "rs");
 
 // ---- gyro steering ----------------------------------------------------------------------------
 let ang = 0, off = 0, lastMotion = 0;
-addEventListener("devicemotion", e => {
-  const a = e.accelerationIncludingGravity;
-  if (!a || a.x == null || a.y == null) return;
+function motion(x, y, o) {   // x, y: accelerometer incl. gravity; o: screen rotation (90 or 270 in landscape)
   lastMotion = performance.now();
-  const o = (screen.orientation && screen.orientation.angle) || 90;
-  let d = (o === 270 ? Math.atan2(-a.y, -a.x) : Math.atan2(a.y, a.x)) * 180 / Math.PI;   // wheel rotation in landscape
+  let d = (o === 270 ? Math.atan2(-y, -x) : Math.atan2(y, x)) * 180 / Math.PI;   // wheel rotation in landscape
   if (cfg.invert) d = -d;
   ang = ang * .7 + d * .3;
   if (cfg.layout === "car" && cfg.mode === "gyro") { S.st = steer(clamp((ang - off) / cfg.range, -1, 1)); ui(); mark(); }
+}
+addEventListener("devicemotion", e => {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x == null || a.y == null) return;
+  motion(a.x, a.y, (screen.orientation && screen.orientation.angle) || 90);
 });
+window.onNativeMotion = motion;   // called by the Android app's accelerometer
 const calibrate = () => { off = ang; buzz(30); };
 $("#cal").onclick = calibrate;
 
@@ -113,7 +122,7 @@ const ping = () => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 
 function connect() {
   clearTimeout(retry); bad = false;
   if (ws) { ws.onclose = null; try { ws.close(); } catch (e) {} }
-  ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+  ws = new WebSocket(NATIVE ? `ws://${host}:8444/ws` : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
   ws.onopen = () => ws.send(JSON.stringify({ t: "auth", pin }));
   ws.onmessage = e => {
     const d = JSON.parse(e.data);
@@ -128,11 +137,17 @@ function connect() {
   ws.onclose = () => { ok = false; clearInterval(timer); setOn(false); $("#ms").textContent = "--"; releaseAll(); if (!bad) retry = setTimeout(connect, 1000); };
 }
 function fullscreen() {
+  if (NATIVE) return;   // the app is already fullscreen
   const d = document.documentElement;
   Promise.resolve(d.requestFullscreen && d.requestFullscreen()).then(() => screen.orientation && screen.orientation.lock("landscape")).catch(() => {});
 }
 $("#go").onclick = () => {
   pin = $("#pin").value.trim();
+  if (NATIVE) {
+    host = $("#host").value.trim().replace(/^https?:\/\//, "").replace(/[:\/].*$/, "");
+    if (!host) { $("#msg").textContent = "Enter the PC address shown in the PC app"; return; }
+    store("fc.host", host);
+  }
   if (!/^\d{6}$/.test(pin)) { $("#msg").textContent = "Enter the 6-digit PIN shown on your PC"; return; }
   $("#msg").textContent = "";
   if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) DeviceMotionEvent.requestPermission().catch(() => {});
@@ -152,6 +167,7 @@ $("#c-inv").checked = cfg.invert; $("#c-inv").onchange = e => { cfg.invert = e.t
 $("#c-hap").checked = cfg.haptics; $("#c-hap").onchange = e => { cfg.haptics = e.target.checked; save(); buzz(30); };
 
 const q = new URLSearchParams(location.search).get("pin");
+$("#host").value = load("fc.host") || "";
 $("#pin").value = q || load("fc.pin") || ""; if (q) history.replaceState(null, "", "/");
 
 // ---- layouts (saved): car games vs normal games -----------------------------------------------

@@ -62,11 +62,46 @@ jobs:
         with:
           name: ForzaController-portable
           path: dist/ForzaController.exe
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build Android app (debug-signed APK, installs on any Android 10+ phone)
+        run: gradle -p android assembleDebug --no-daemon --stacktrace
+      - run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/ForzaController.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ForzaController-android
+          path: dist/ForzaController.apk
+
+  publish:
+    needs: [build, android]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ForzaController-*
+          path: dist
+          merge-multiple: true
       - name: Publish public download (Releases > latest)
-        shell: pwsh
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete latest --yes --cleanup-tag 2>$null
-          gh release create latest dist\ForzaController-Setup.exe dist\ForzaController.exe --title "Forza Controller - latest build" --notes "Installer (recommended) and portable EXE built from the latest commit. Install the ViGEmBus driver when the installer offers it."
+          ls -l dist
+          gh release delete latest --yes --cleanup-tag --repo "${{ github.repository }}" || true
+          gh release create latest dist/* --repo "${{ github.repository }}" --title "Forza Controller - latest build" \
+            --notes "Windows: ForzaController-Setup.exe (installer, recommended) or ForzaController.exe (portable). Android: ForzaController.apk. Install the ViGEmBus driver when the installer offers it."

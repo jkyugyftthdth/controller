@@ -60,7 +60,9 @@ class App:
         self.qr = tk.Label(card, bg="white", bd=8, relief="flat")
         self.qr.pack(pady=14)
         self.url = tk.Label(card, bg=PANEL, fg=TXT, font=("Consolas", 10))
-        self.url.pack(pady=(0, 12))
+        self.url.pack(pady=(0, 4))
+        self.appline = tk.Label(card, bg=PANEL, fg=MUTED, font=("Segoe UI", 9))
+        self.appline.pack(pady=(0, 12))
 
         self.pin = tk.Label(f, bg=BG, fg=TXT, font=("Consolas", 24, "bold"))
         self.pin.grid(row=7, column=0, sticky="w")
@@ -108,10 +110,12 @@ class App:
         if not self.combo.get():
             self.url.config(text="No network - join Wi-Fi, plug in Ethernet or turn on Mobile Hotspot")
             self.qr.config(image="")
+            self.appline.config(text="")
             return
         ip = self.combo.get().split()[0]
         url = f"https://{ip}:{self.s['port']}/?pin={self.s['pin']}"
         self.url.config(text=f"https://{ip}:{self.s['port']}")
+        self.appline.config(text=f"Android app:  address {ip}   PIN {self.s['pin']}")
         q = qrcode.QRCode(border=1, box_size=5)
         q.add_data(url)
         q.make(fit=True)
