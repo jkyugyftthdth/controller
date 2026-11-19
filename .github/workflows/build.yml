@@ -6,7 +6,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,9 +35,38 @@ jobs:
           if (-not (Test-Path "$sp\\vgamepad\\__init__.py")) { throw 'vgamepad files missing' }
           Get-ChildItem "$sp\\vgamepad" -Recurse -Filter *.dll | Select-Object -ExpandProperty FullName
       - run: >
-          pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController
+          pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --icon assets\icon.ico --name ForzaController
           --paths . --add-data "web;web" --collect-all qrcode --collect-all vgamepad --hidden-import vgamepad.win.virtual_gamepad --hidden-import vgamepad.win.vigem_client --hidden-import vgamepad.win.vigem_commons --hidden-import PIL.ImageTk app/main.py
+      - name: Fetch ViGEmBus driver installer (bundled into the setup, optional)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $r = Invoke-RestMethod https://api.github.com/repos/nefarius/ViGEmBus/releases/latest
+          $a = $r.assets | Where-Object { $_.name -like '*.exe' } | Select-Object -First 1
+          Write-Host "Bundling $($a.name)"
+          Invoke-WebRequest $a.browser_download_url -OutFile installer\ViGEmBus_Setup.exe
+      - name: Build Windows installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup not found' }
+          & $iscc "/DAppVersion=1.0.${{ github.run_number }}" installer\ForzaController.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          Get-ChildItem dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ForzaController-installer
+          path: dist/ForzaController-Setup.exe
       - uses: actions/upload-artifact@v4
         with:
           name: ForzaController-portable
           path: dist/ForzaController.exe
+      - name: Publish public download (Releases > latest)
+        shell: pwsh
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag 2>$null
+          gh release create latest dist\ForzaController-Setup.exe dist\ForzaController.exe --title "Forza Controller - latest build" --notes "Installer (recommended) and portable EXE built from the latest commit. Install the ViGEmBus driver when the installer offers it."

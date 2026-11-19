@@ -1,61 +1,65 @@
-Forza Controller
-Use your Android phone as a controller for Forza Horizon 4 on Windows 11 - no driver needed.
-The Windows app receives your touches/tilt over the local network and presses keyboard keys.
-Phone	PC key (FH4 default)
-ACCELERATE (hold)	W
-BRAKE / reverse (hold)	S
-HANDBRAKE (hold)	Space
-REWIND (hold)	R
-Tilt phone like a wheel	A / D (pulsed for partial steering)
-Check these against FH4 > Settings > Controls > Keyboard; change `SCAN` in `app/keyboard.py` if you remapped.
-Use
-Run `ForzaController.exe`. It shows a QR code and a PIN.
-Phone and PC on the same network: home Wi-Fi router, or the Windows 11 Mobile Hotspot (join it from
-the phone). Pick the matching network in the dropdown.
-Scan the QR code. First time only: Chrome warns "connection is not private" (the app uses its own
-certificate so that motion sensors are allowed). Tap Advanced > Proceed.
-Tap CONNECT, hold the phone landscape like a wheel (it auto-calibrates; use Calibrate to re-centre).
-Click into the Forza window once so it has keyboard focus, then drive.
-Settings (on the phone, saved automatically)
-Gyro or touch-strip steering, full-lock angle, steering sensitivity, deadzone, invert, vibration, fullscreen.
-How steering works
-Keyboards are digital, so the app turns A/D on and off ~100 times a second; the share of time a key is
-down matches your tilt, and Forza's own keyboard steering smoothing averages it. It is smoother than plain
-A/D but not identical to a real analog stick.
-Portable EXE
-`ForzaController.exe` is a single file: no installer, no Python, no driver. Put it anywhere (Desktop, USB stick);
-its PIN, settings and certificate are stored in a `ForzaController_data` folder next to it.
-Get the EXE either way:
-GitHub (no Python needed): push this project to GitHub, open Actions > Build portable EXE > Run workflow,
-then download `ForzaController-portable` from the finished run.
-Locally on Windows: double-click `build.bat` -> `dist\ForzaController.exe`.
-Run from source / build
+# Forza Controller
+
+Use your phone as a PS5-style controller on Windows. The PC app turns your touches and tilt into a **virtual Xbox 360 controller**, so games (Forza Horizon, any XInput game) see a normal gamepad.
+
+## Install (Windows 10/11)
+1. Download **ForzaController-Setup.exe** from the [latest release](../../releases/latest) (or from Actions > latest run > `ForzaController-installer`).
+2. Run it and keep the options ticked: the **gamepad driver (ViGEmBus)** and the **firewall rule**. Reboot if the driver asks.
+3. Start *Forza Controller* (it runs as administrator). The window should say **Mode: Virtual Xbox controller**.
+4. Scan the QR code with the phone camera, accept the one-time certificate warning (*Advanced > Proceed*), enter the PIN, tap CONNECT.
+
+A portable `ForzaController.exe` (no installer) is attached to the same release; it still needs the ViGEmBus driver for controller mode.
+
+## Two saved layouts (CAR / PAD switch in the phone's top bar)
+| | CAR (racing) | PAD (normal games) |
+|---|---|---|
+| Steering | tilt the phone like a wheel (or the left stick) | left stick |
+| Triggers | big BRAKE (LT) and ACCELERATE (RT) | L2 / R2 with L1 / R1 |
+| Centre | steering wheel and tilt bar | brand panel, L3 / R3 |
+| Always there | D-pad, both sticks, Create / PS / Options | same |
+
+The phone remembers the last layout you used.
+
+## Button map (PS symbols -> Xbox buttons the game sees)
+| Phone | Xbox pad |
+|---|---|
+| L2 / BRAKE, R2 / ACCELERATE | LT, RT |
+| L1, R1 | LB, RB |
+| Left stick (or tilt in CAR) | left stick |
+| Right stick | right stick |
+| D-pad | D-pad |
+| cross, circle, square, triangle | A, B, X, Y |
+| L3, R3 | stick clicks |
+| Create, PS, Options | Back, Guide, Start |
+
+In CAR layout the cross is HANDBRAKE, square NITROS and triangle REWIND (Forza defaults for A, X, Y).
+
+## Connecting: Wi-Fi, hotspot, Ethernet, Bluetooth, USB
+The phone talks to the PC over the network, so any link that puts both on one network works. The app lists each address with its type; pick one and scan the QR code.
+- **Wi-Fi / Ethernet:** PC and phone on the same router (PC can be wired).
+- **PC Mobile Hotspot:** turn on the Windows hotspot, join it from the phone.
+- **Phone hotspot:** join the phone's hotspot from the PC.
+- **Bluetooth:** pair the phone, turn on *Bluetooth tethering* on the phone, connect the PC to it. It appears as "Bluetooth tethering". (A browser page cannot use classic Bluetooth directly, so Bluetooth works as a network link.)
+- **USB cable:** turn on *USB tethering* on the phone. Lowest latency.
+
+Press **Rescan** after turning a link on.
+
+## Build from source
 ```
 pip install -r requirements.txt
-python -m app.main        # or: build.bat  ->  dist\ForzaController.exe
+python -m app.main          # run
+build.bat                   # dist\ForzaController.exe
+iscc installer\ForzaController.iss   # dist\ForzaController-Setup.exe (needs Inno Setup 6)
 ```
-Troubleshooting
-Game ignores keys: if Forza runs as administrator, run this app as administrator too.
-Page won't open: allow the app in Windows Firewall, or run once as admin:
-`netsh advfirewall firewall add rule name="ForzaController" dir=in action=allow protocol=TCP localport=8443 profile=any`
-"No motion sensor data": switch Steering to Touch strip in Settings.
-Car steers the wrong way: tick Invert steering.
-Hotspot not listed: turn it on, then press Rescan.
-Security
-Traffic is encrypted but the certificate is self-signed; use your own router or the PC hotspot, not public Wi-Fi.
-Controller mode (recommended for Forza)
-If the game ignores keyboard keys, install the free ViGEmBus driver once (https://github.com/nefarius/ViGEmBus/releases, run the installer, reboot). On start, the app then shows "Mode: Virtual Xbox controller" and appears to Forza as a real Xbox 360 pad. Without the driver it falls back to keyboard keys (only ACCELERATE, BRAKE, HAND BRAKE, REWIND and tilt steering work in that mode). In Forza, set the controller input to the gamepad (unplug/disable other pads if it picks the wrong one).
-The phone screen is a full on-screen Xbox controller:
-Phone	Xbox pad
-BRAKE	LT
-ACCELERATE	RT
-LB / RB	LB / RB
-Phone tilt (or left on-screen stick)	left stick, analog
-Right on-screen stick	right stick (camera)
-D-pad	D-pad
-A (HAND BRAKE)	A
-B	B
-X (NITROS)	X
-Y / REWIND button	Y
-BACK / START	Back / Start
-Multi-touch works, so you can steer, accelerate and hit buttons at the same time.
+GitHub Actions builds the exe and installer on every push and publishes them to the `latest` release.
+Note: `pip install vgamepad` launches the ViGEmBus installer; the CI workflow unpacks the package without running it.
+
+## Troubleshooting
+- **Game ignores the pad:** make sure the window says "Mode: Virtual Xbox controller". If it says keyboard, install ViGEmBus and restart the app. In the game, pick the controller as the input device.
+- **Page won't open on the phone:** allow the app in the firewall (the installer does this), and make sure the phone is on the network you picked.
+- **"No motion sensor data":** Settings > Steering > Touch strip, or use the left stick.
+- **Steers the wrong way:** Settings > Invert steering.
+- **Keyboard fallback** (no driver) only supports accelerate, brake, handbrake, rewind and tilt steering.
+
+## Security
+Traffic is encrypted with a self-signed certificate and protected by a PIN. Use your own router, hotspot, cable or Bluetooth link, not public Wi-Fi.

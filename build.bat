@@ -4,7 +4,7 @@ python -m venv .venv || goto :err
 call .venv\Scripts\activate || goto :err
 python -m pip install --upgrade pip
 pip install -r requirements.txt pyinstaller || goto :err
-pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController ^
+pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --icon assets\icon.ico --name ForzaController ^
   --paths . ^
   --add-data "web;web" ^
   --collect-all qrcode --collect-all vgamepad --hidden-import vgamepad.win.virtual_gamepad --hidden-import vgamepad.win.vigem_client --hidden-import vgamepad.win.vigem_commons ^

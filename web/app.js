@@ -6,7 +6,7 @@ const load = k => { try { return localStorage.getItem(k); } catch (e) { return n
 const store = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
 // ---- saved settings -------------------------------------------------------------
-const cfg = { mode: "gyro", range: 40, dz: 3, steer: 1, invert: false, haptics: true };
+const cfg = { layout: "car", mode: "gyro", range: 40, dz: 3, steer: 1, invert: false, haptics: true };
 try { Object.assign(cfg, JSON.parse(load("fc2.cfg"))); } catch (e) {}
 const save = () => store("fc2.cfg", JSON.stringify(cfg));
 
@@ -79,7 +79,7 @@ addEventListener("devicemotion", e => {
   let d = (o === 270 ? Math.atan2(-a.y, -a.x) : Math.atan2(a.y, a.x)) * 180 / Math.PI;   // wheel rotation in landscape
   if (cfg.invert) d = -d;
   ang = ang * .7 + d * .3;
-  if (cfg.mode === "gyro") { S.st = steer(clamp((ang - off) / cfg.range, -1, 1)); ui(); mark(); }
+  if (cfg.layout === "car" && cfg.mode === "gyro") { S.st = steer(clamp((ang - off) / cfg.range, -1, 1)); ui(); mark(); }
 });
 const calibrate = () => { off = ang; buzz(30); };
 $("#cal").onclick = calibrate;
@@ -87,7 +87,7 @@ $("#cal").onclick = calibrate;
 // ---- touch-strip steering (fallback if gyro unavailable) ---------------------------------
 const Z = $("#zone"); let zid = null;
 const zset = e => { const r = Z.getBoundingClientRect(); S.st = steer(clamp(((e.clientX - r.left) / r.width - .5) * 2, -1, 1)); ui(); mark(); };
-Z.onpointerdown = e => { if (cfg.mode !== "touch" || e.target.closest("button")) return; zid = e.pointerId; cap(Z, zid); zset(e); };
+Z.onpointerdown = e => { if (cfg.layout !== "car" || cfg.mode !== "touch" || e.target.closest("button")) return; zid = e.pointerId; cap(Z, zid); zset(e); };
 Z.onpointermove = e => { if (e.pointerId === zid) zset(e); };
 Z.onpointerup = Z.onpointercancel = e => { if (e.pointerId === zid) { zid = null; S.st = 0; ui(); mark(); } };
 
@@ -121,7 +121,7 @@ function connect() {
       ok = true; lastSent = ""; setOn(true); $("#start").classList.add("hide"); store("fc.pin", pin);
       clearInterval(timer); timer = setInterval(ping, 250); buzz([20, 40, 20]);
       setTimeout(calibrate, 700);
-      setTimeout(() => { if (cfg.mode === "gyro" && performance.now() - lastMotion > 2000) $("#hint").textContent = "No motion sensor data - switch to Touch strip in Settings"; }, 2500);
+      setTimeout(() => { if (cfg.layout === "car" && cfg.mode === "gyro" && performance.now() - lastMotion > 2000) $("#hint").textContent = "No motion sensor data - switch to Touch strip in Settings"; }, 2500);
     } else if (d.t === "err") { bad = true; $("#msg").textContent = d.m; $("#start").classList.remove("hide"); }
     else if (d.t === "q") { rtt = Math.round(performance.now() - d.c); $("#ms").textContent = rtt; }
   };
@@ -141,7 +141,7 @@ $("#go").onclick = () => {
 $("#disc").onclick = () => { bad = true; if (ws) ws.close(); $("#cfg").classList.add("hide"); $("#start").classList.remove("hide"); };
 
 // ---- settings UI ------------------------------------------------------------------------------------------------
-$("#info").onclick = () => alert("On-screen Xbox controller\nBRAKE=LT  ACCELERATE=RT  LB/RB  D-pad  BACK/START\nA=HAND BRAKE  B  X=NITROS  Y=REWIND\nTilt (or the left stick) steers. Right stick = camera."); $("#gear").onclick = () => $("#cfg").classList.remove("hide"); $("#cfgx").onclick = () => $("#cfg").classList.add("hide");
+$("#info").onclick = () => alert("Two layouts (saved): CAR and PAD.\nCAR: tilt steers, BRAKE=LT, ACCELERATE=RT, cross=HANDBRAKE, square=NITROS, triangle=REWIND.\nPAD: normal dual-stick gamepad with L1/L2/R1/R2, L3/R3, D-pad, Create/PS/Options.\nPS symbols map to Xbox: cross=A, circle=B, square=X, triangle=Y."); $("#gear").onclick = () => $("#cfg").classList.remove("hide"); $("#cfgx").onclick = () => $("#cfg").classList.add("hide");
 $("#fs").onclick = fullscreen;
 [["range", "#c-range"], ["steer", "#c-steer"], ["dz", "#c-dz"]].forEach(([k, s]) => {
   const el = $(s), o = $(s + "v"); el.value = cfg[k]; o.textContent = cfg[k];
@@ -153,4 +153,13 @@ $("#c-hap").checked = cfg.haptics; $("#c-hap").onchange = e => { cfg.haptics = e
 
 const q = new URLSearchParams(location.search).get("pin");
 $("#pin").value = q || load("fc.pin") || ""; if (q) history.replaceState(null, "", "/");
-hint();
+
+// ---- layouts (saved): car games vs normal games -----------------------------------------------
+function applyLayout(l) {
+  cfg.layout = l === "pad" ? "pad" : "car"; save();
+  document.documentElement.dataset.layout = cfg.layout;
+  $$("#lay button").forEach(b => b.classList.toggle("act", b.dataset.l === cfg.layout));
+  releaseAll(); hint();
+}
+$$("#lay button").forEach(b => b.onclick = () => applyLayout(b.dataset.l));
+applyLayout(cfg.layout);

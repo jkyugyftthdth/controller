@@ -10,7 +10,8 @@ BUTTONS = {
     "lb": B.XUSB_GAMEPAD_LEFT_SHOULDER, "rb": B.XUSB_GAMEPAD_RIGHT_SHOULDER,
     "up": B.XUSB_GAMEPAD_DPAD_UP, "down": B.XUSB_GAMEPAD_DPAD_DOWN,
     "left": B.XUSB_GAMEPAD_DPAD_LEFT, "right": B.XUSB_GAMEPAD_DPAD_RIGHT,
-    "start": B.XUSB_GAMEPAD_START, "back": B.XUSB_GAMEPAD_BACK,
+    "start": B.XUSB_GAMEPAD_START, "back": B.XUSB_GAMEPAD_BACK, "guide": B.XUSB_GAMEPAD_GUIDE,
+    "l3": B.XUSB_GAMEPAD_LEFT_THUMB, "r3": B.XUSB_GAMEPAD_RIGHT_THUMB,
     # old names, kept so an older cached phone page still works
     "hb": B.XUSB_GAMEPAD_A, "rw": B.XUSB_GAMEPAD_Y, "nt": B.XUSB_GAMEPAD_X,
 }
