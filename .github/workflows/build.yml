@@ -12,22 +12,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install dependencies (without vgamepad's driver installer)
+      - name: Install dependencies (vgamepad unpacked by hand, no driver installer)
         shell: pwsh
         run: |
-          # vgamepad's pip install launches the ViGEmBus installer, which waits for a click and hangs CI.
-          # The driver is only needed on the player's PC, so install the library files only.
+          # vgamepad's pip install runs the ViGEmBus installer, which waits for a click and hangs CI.
+          # The driver is only needed on the player's PC, so just unpack the library files.
           Get-Content requirements.txt | Where-Object { $_ -notmatch '^vgamepad' } | Set-Content req-ci.txt
           pip install -r req-ci.txt pyinstaller
-          pip download vgamepad==0.1.0 --no-deps --only-binary=:all: -d dl
-          if ($LASTEXITCODE -eq 0) {
-            pip install --no-deps (Get-ChildItem dl\*.whl).FullName
-          } else {
-            pip download vgamepad==0.1.0 --no-deps --no-binary=:all: -d dl
-            $sp = python -c "import site;print(site.getsitepackages()[0])"
-            tar -xzf (Get-ChildItem dl\*.tar.gz).FullName -C dl
-            Copy-Item -Recurse -Force (Get-ChildItem dl -Directory | Select-Object -First 1).FullName\vgamepad $sp\vgamepad
-          }
+          $meta = Invoke-RestMethod https://pypi.org/pypi/vgamepad/0.1.0/json
+          $file = $meta.urls | Sort-Object { $_.packagetype -ne 'bdist_wheel' } | Select-Object -First 1
+          Write-Host "Downloading $($file.filename)"
+          New-Item -ItemType Directory -Force dl, dl\x | Out-Null
+          Invoke-WebRequest $file.url -OutFile "dl\$($file.filename)"
+          if ($file.filename -like '*.whl') { Copy-Item "dl\$($file.filename)" dl\v.zip; Expand-Archive dl\v.zip dl\x -Force }
+          else { tar -xzf "dl\$($file.filename)" -C dl\x }
+          $pkg = Get-ChildItem dl\x -Recurse -Directory -Filter vgamepad | Where-Object { Test-Path "$($_.FullName)\__init__.py" } | Select-Object -First 1
+          $sp = python -c "import site;print(site.getsitepackages()[0])"
+          Copy-Item -Recurse -Force $pkg.FullName "$sp\vgamepad"
           python -c "import vgamepad; print('vgamepad import ok')"
       - run: >
           pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController
