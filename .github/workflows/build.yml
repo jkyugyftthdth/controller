@@ -6,12 +6,29 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt pyinstaller
+      - name: Install dependencies (without vgamepad's driver installer)
+        shell: pwsh
+        run: |
+          # vgamepad's pip install launches the ViGEmBus installer, which waits for a click and hangs CI.
+          # The driver is only needed on the player's PC, so install the library files only.
+          Get-Content requirements.txt | Where-Object { $_ -notmatch '^vgamepad' } | Set-Content req-ci.txt
+          pip install -r req-ci.txt pyinstaller
+          pip download vgamepad==0.1.0 --no-deps --only-binary=:all: -d dl
+          if ($LASTEXITCODE -eq 0) {
+            pip install --no-deps (Get-ChildItem dl\*.whl).FullName
+          } else {
+            pip download vgamepad==0.1.0 --no-deps --no-binary=:all: -d dl
+            $sp = python -c "import site;print(site.getsitepackages()[0])"
+            tar -xzf (Get-ChildItem dl\*.tar.gz).FullName -C dl
+            Copy-Item -Recurse -Force (Get-ChildItem dl -Directory | Select-Object -First 1).FullName\vgamepad $sp\vgamepad
+          }
+          python -c "import vgamepad; print('vgamepad import ok')"
       - run: >
           pyinstaller --noconfirm --clean --onefile --noconsole --uac-admin --name ForzaController
           --paths . --add-data "web;web" --collect-all qrcode --collect-all vgamepad --hidden-import PIL.ImageTk app/main.py
